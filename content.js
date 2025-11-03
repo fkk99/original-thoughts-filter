@@ -1,22 +1,36 @@
 // This script runs on linkedin.com
-console.log("Original Thoughts Filter: Content script loaded.");
+console.log("Original Thoughts Filter [v3]: Content script loaded.");
 
 // --- Configuration ---
 // The text to look for. The "em-dash".
 const SLOP_INDICATOR = '—';
 
-// LinkedIn's CSS class for a post (feed update). This is the main container.
-const POST_SELECTOR = '.feed-shared-update-v2';
+// LinkedIn's CSS selectors for posts. We use multiple as a fallback.
+// [data-urn*='...'] is more stable than class names.
+const POST_SELECTORS = [
+    "[data-urn*='urn:li:share:']",        // A shared post
+    "[data-urn*='urn:li:activity:']",      // A native post (text, image)
+    ".feed-shared-update-v2"            // The "classic" selector
+];
 
-// LinkedIn's CSS class for a comment.
-const COMMENT_SELECTOR = '.comments-comment-item';
+// Selectors for the text content *within* a post.
+const POST_TEXT_SELECTORS = [
+    ".update-components-text",           // The main text block
+    "[class*='commentary']",             // A common class name pattern
+    ".feed-shared-update-v2__description-wrapper" // The "classic" one
+];
 
-// Selector for the text content *within* a post.
-// We check this so we don't hide posts *about* em-dashes.
-const POST_TEXT_SELECTOR = '.feed-shared-update-v2__description-wrapper';
+// Selectors for a comment.
+const COMMENT_SELECTORS = [
+    "article[aria-label*='Comment by']", // A good accessibility selector
+    ".comments-comment-item"             // The "classic" selector
+];
 
-// Selector for the text content *within* a comment.
-const COMMENT_TEXT_SELECTOR = '.comments-comment-item__text-wrapper';
+// Selectors for the text content *within* a comment.
+const COMMENT_TEXT_SELECTORS = [
+    ".comments-comment-item__text-wrapper", // The "classic" one
+    "[class*='comment-item__text']"         // A common class name pattern
+];
 
 // --- State ---
 // Local cache of the filter state.
@@ -25,17 +39,40 @@ let isEnabled = true;
 // --- Helper Functions ---
 
 /**
- * Checks if a given text element contains the slop indicator.
+ * Checks if a given element matches any of the selectors in an array.
  * @param {HTMLElement} element - The HTML element to check.
- * @param {string} textSelector - The CSS selector for the text content.
+ * @param {string[]} selectors - The array of CSS selectors.
+ * @returns {boolean} - True if it matches any selector.
+ */
+function matchesAny(element, selectors) {
+    return selectors.some(selector => element.matches(selector));
+}
+
+/**
+ * Gets the text content from the first matching selector.
+ * @param {HTMLElement} element - The parent element.
+ * @param {string[]} selectors - The array of CSS selectors for the text.
+ * @returns {string} - The text content, or an empty string.
+ */
+function getTextContent(element, selectors) {
+    for (const selector of selectors) {
+        const textElement = element.querySelector(selector);
+        if (textElement && textElement.textContent) {
+            return textElement.textContent;
+        }
+    }
+    return "";
+}
+
+/**
+ * Checks if a given text element contains the slop indicator.
+ * @param {HTMLElement} element - The HTML element to check (e.g., the post container).
+ * @param {string[]} textSelectors - The CSS selectors for the text content.
  * @returns {boolean} - True if slop is found, false otherwise.
  */
-function containsSlop(element, textSelector) {
-    const textElement = element.querySelector(textSelector);
-    if (textElement && textElement.textContent) {
-        return textElement.textContent.includes(SLOP_INDICATOR);
-    }
-    return false;
+function containsSlop(element, textSelectors) {
+    const textContent = getTextContent(element, textSelectors);
+    return textContent.includes(SLOP_INDICATOR);
 }
 
 /**
@@ -45,7 +82,7 @@ function containsSlop(element, textSelector) {
 function hideElement(element) {
     // Only hide if it's not already hidden by us
     if (element.style.display !== 'none') {
-        console.log("Original Thoughts Filter: Hiding slop.", element);
+        // console.log("Original Thoughts Filter: Hiding slop.", element); // Note: More detailed log is now in processNode
         element.style.display = 'none';
 
         // Increment the total hidden count in storage
@@ -64,18 +101,26 @@ function processNode(node) {
     // Ensure it's an element node before proceeding
     if (node.nodeType !== 1) return;
 
-    // Check if it's a post
-    if (node.matches(POST_SELECTOR)) {
-        if (containsSlop(node, POST_TEXT_SELECTOR)) {
-            hideElement(node);
+    try {
+        // Check if it's a post
+        if (matchesAny(node, POST_SELECTORS)) {
+            if (containsSlop(node, POST_TEXT_SELECTORS)) {
+                const text = getTextContent(node, POST_TEXT_SELECTORS).substring(0, 70);
+                console.log(`%cOriginal Thoughts Filter: Hiding POST. Reason: Found slop indicator. Text starts with: "${text}..."`, "color: #ff8c00;", node);
+                hideElement(node);
+            }
         }
-    }
 
-    // Check if it's a comment
-    if (node.matches(COMMENT_SELECTOR)) {
-        if (containsSlop(node, COMMENT_TEXT_SELECTOR)) {
-            hideElement(node);
+        // Check if it's a comment
+        if (matchesAny(node, COMMENT_SELECTORS)) {
+            if (containsSlop(node, COMMENT_TEXT_SELECTORS)) {
+                const text = getTextContent(node, COMMENT_TEXT_SELECTORS).substring(0, 70);
+                console.log(`%cOriginal Thoughts Filter: Hiding COMMENT. Reason: Found slop indicator. Text starts with: "${text}..."`, "color: #ffb800;", node);
+                hideElement(node);
+            }
         }
+    } catch (e) {
+        console.error("Original Thoughts Filter: Error processing node:", e, node);
     }
 }
 
@@ -85,32 +130,41 @@ function processNode(node) {
 function initialScan() {
     if (!isEnabled) return;
 
-    document.querySelectorAll(POST_SELECTOR).forEach(node => processNode(node));
-    document.querySelectorAll(COMMENT_SELECTOR).forEach(node => processNode(node));
+    console.log("Original Thoughts Filter: Running initial page scan...");
+    try {
+        document.querySelectorAll(POST_SELECTORS.join(', ')).forEach(node => processNode(node));
+        document.querySelectorAll(COMMENT_SELECTORS.join(', ')).forEach(node => processNode(node));
+    } catch (e) {
+        console.error("Original Thoughts Filter: Error during initialScan:", e);
+    }
+    console.log("Original Thoughts Filter: Initial page scan complete.");
 }
 
 // --- Main Execution ---
 
 // 1. Create a MutationObserver to watch for new nodes (posts/comments)
-// This is *much* more efficient than a timer.
 const observer = new MutationObserver((mutationsList) => {
-    // If the filter is off, do nothing.
     if (!isEnabled) return;
 
-    for (const mutation of mutationsList) {
-        if (mutation.type === 'childList') {
-            mutation.addedNodes.forEach(node => {
-                // We process the node itself
-                processNode(node);
+    try {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'childList') {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType !== 1) return; // Only process element nodes
 
-                // And we check its descendants, as LinkedIn wraps new posts
-                // in other container elements.
-                if (node.nodeType === 1 && node.querySelectorAll) {
-                    node.querySelectorAll(POST_SELECTOR).forEach(childNode => processNode(childNode));
-                    node.querySelectorAll(COMMENT_SELECTOR).forEach(childNode => processNode(childNode));
-                }
-            });
+                    // We process the node itself
+                    processNode(node);
+
+                    // And we check its descendants
+                    if (node.querySelectorAll) {
+                        node.querySelectorAll(POST_SELECTORS.join(', ')).forEach(childNode => processNode(childNode));
+                        node.querySelectorAll(COMMENT_SELECTORS.join(', ')).forEach(childNode => processNode(childNode));
+                    }
+                });
+            }
         }
+    } catch (e) {
+        console.error("Original Thoughts Filter: Error inside MutationObserver:", e);
     }
 });
 
@@ -118,16 +172,12 @@ const observer = new MutationObserver((mutationsList) => {
 chrome.storage.sync.get(['isEnabled', 'totalHiddenCount'], (data) => {
     isEnabled = data.isEnabled;
 
-    // Only run the initial scan and start observing if enabled
     if (isEnabled) {
         console.log("Original Thoughts Filter: Filter is ON. Starting scan.");
-        initialScan();
+        // Wait for the page to be a bit more settled before the initial scan
+        setTimeout(initialScan, 1000);
 
-        // Start observing the document body for changes
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        observer.observe(document.body, { childList: true, subtree: true });
     } else {
         console.log("Original Thoughts Filter: Filter is OFF.");
     }
@@ -135,25 +185,22 @@ chrome.storage.sync.get(['isEnabled', 'totalHiddenCount'], (data) => {
 
 // 3. Listen for changes to the filter state (from the popup)
 chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync' && changes.isEnabled) {
-        console.log("Original Thoughts Filter: State changed.");
-        isEnabled = changes.isEnabled.newValue;
+    try {
+        if (area === 'sync' && changes.isEnabled) {
+            console.log("Original Thoughts Filter: State changed.");
+            isEnabled = changes.isEnabled.newValue;
 
-        if (isEnabled) {
-            // Filter was just turned ON
-            console.log("Original Thoughts Filter: Turning ON. Starting observer.");
-            initialScan(); // Re-scan the page
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-        } else {
-            // Filter was just turned OFF
-            console.log("Original Thoughts Filter: Turning OFF. Disconnecting observer.");
-            observer.disconnect();
-            // Note: This won't un-hide posts. A page reload is required,
-            // which is why the "Reload" button in the popup is important.
+            if (isEnabled) {
+                console.log("Original Thoughts Filter: Turning ON. Starting observer.");
+                setTimeout(initialScan, 5); // Re-scan the page
+                observer.observe(document.body, { childList: true, subtree: true });
+            } else {
+                console.log("Original Thoughts Filter: Turning OFF. Disconnecting observer.");
+                observer.disconnect();
+            }
         }
+    } catch (e) {
+        console.error("Original Thoughts Filter: Error in storage.onChanged listener:", e);
     }
 });
 

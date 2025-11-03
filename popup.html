@@ -3,38 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Original Thoughts Filter</title>
+    <!-- This links to the new minimal CSS file we'll create next -->
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>The Original Thoughts Filter</h1>
-        </header>
+        <div class="header">
+            <h1>Original Thoughts Filter</h1>
+        </div>
 
-        <main>
-            <div class="control-row">
-                <span id="toggle-label">Filter is ON</span>
-                <!-- A clean, modern CSS-only toggle switch -->
-                <label class="switch">
-                    <input type="checkbox" id="toggle-switch">
-                    <span class="slider"></span>
-                </label>
-            </div>
+        <div class="setting-row">
+            <label for="toggle-switch" id="filter-status">Filter is ON</label>
+            <label class="toggle">
+                <input type="checkbox" id="toggle-switch" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
 
-            <div class="stats-row">
-                <span>Slop posts hidden:</span>
-                <span id="hidden-count">0</span>
-            </div>
-        </main>
-
-        <footer>
-            <button id="reload-button" title="Reload the feed to see hidden posts">
-                Reload LinkedIn Feed
-            </button>
-        </footer>
+        <div class="stats-row">
+            <span>Slop posts hidden:</span>
+            <strong id="hidden-count-value">0</strong>
+        </div>
     </div>
-    <!-- Link to the popup's brain -->
+    <!-- This script file doesn't need to change -->
     <script src="popup.js"></script>
 </body>
 </html>
