@@ -1,5 +1,3 @@
-// This script runs when the popup is opened
-
 document.addEventListener('DOMContentLoaded', () => {
     const toggleSwitch = document.getElementById('toggle-switch');
     const filterStatus = document.getElementById('filter-status');
@@ -15,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleSwitch.checked = false;
         }
 
-        // Always update the count
         countDisplay.textContent = data.totalHiddenCount || 0;
     }
 
@@ -30,17 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.storage.sync.set({ isEnabled: newState }, () => {
             // Update the status text immediately on change
             filterStatus.textContent = newState ? 'Filter is ON' : 'Filter is OFF';
-            console.log('Filter state saved:', newState);
+            console.log('AI Slop Filter: State saved:', newState);
         });
     });
 
-    // 3. Storage Change Listener: Listen for changes from ANY script (like content.js)
-    //    *** THIS IS THE FIX ***
+    // 3. Storage Change Listener: Listen for changes from any script
     chrome.storage.onChanged.addListener((changes, area) => {
         if (area === 'sync') {
-            // Check if either isEnabled or totalHiddenCount changed
+            // Check if either state or count changed
             if (changes.isEnabled || changes.totalHiddenCount) {
-                // Re-fetch ALL data to ensure UI is consistent
+                // Re-fetch all data to ensure UI is consistent
                 chrome.storage.sync.get(['isEnabled', 'totalHiddenCount'], (data) => {
                     updateUI(data);
                 });
@@ -48,4 +44,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-

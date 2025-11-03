@@ -13,16 +13,28 @@ body {
 }
 
 .header {
+    /* New styles for flexbox icon/title alignment */
+    display: flex;
+    align-items: center;
     border-bottom: 1px solid #ddd;
     padding-bottom: 8px;
     margin-bottom: 12px;
 }
 
-    .header h1 {
-        font-size: 16px;
-        margin: 0;
-        color: #333;
-    }
+/* Style for the icon */
+#header-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px; /* Space between icon and title */
+}
+
+#header-title {
+    font-size: 16px;
+    margin: 0;
+    color: #333;
+    font-weight: 600; /* Make title a bit bolder */
+}
+
 
 .setting-row, .stats-row {
     display: flex;

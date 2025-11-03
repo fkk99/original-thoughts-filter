@@ -1,12 +1,10 @@
-// This script runs in the background and initializes default settings.
-
-// On install, set the default state to 'enabled' and count to 0.
+// Set default state on install
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.sync.set({
         isEnabled: true,
         totalHiddenCount: 0
     }, () => {
-        console.log('AI Slop Filter: Default state set to ON.');
+        console.log('AI Slop Filter: Default state set.');
     });
 });
 
