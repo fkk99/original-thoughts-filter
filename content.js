@@ -1,5 +1,5 @@
 // This script runs on linkedin.com
-console.log("Original Thoughts Filter [v3]: Content script loaded.");
+console.log("AI Slop Filter [v3]: Content script loaded.");
 
 // --- Configuration ---
 // The text to look for. The "em-dash".
@@ -82,7 +82,7 @@ function containsSlop(element, textSelectors) {
 function hideElement(element) {
     // Only hide if it's not already hidden by us
     if (element.style.display !== 'none') {
-        // console.log("Original Thoughts Filter: Hiding slop.", element); // Note: More detailed log is now in processNode
+        // console.log("AI Slop Filter: Hiding slop.", element); // Note: More detailed log is now in processNode
         element.style.display = 'none';
 
         // Increment the total hidden count in storage
@@ -106,7 +106,7 @@ function processNode(node) {
         if (matchesAny(node, POST_SELECTORS)) {
             if (containsSlop(node, POST_TEXT_SELECTORS)) {
                 const text = getTextContent(node, POST_TEXT_SELECTORS).substring(0, 70);
-                console.log(`%cOriginal Thoughts Filter: Hiding POST. Reason: Found slop indicator. Text starts with: "${text}..."`, "color: #ff8c00;", node);
+                console.log(`%cAI Slop Filter: Hiding POST. Reason: Found slop indicator. Text starts with: "${text}..."`, "color: #ff8c00;", node);
                 hideElement(node);
             }
         }
@@ -115,12 +115,12 @@ function processNode(node) {
         if (matchesAny(node, COMMENT_SELECTORS)) {
             if (containsSlop(node, COMMENT_TEXT_SELECTORS)) {
                 const text = getTextContent(node, COMMENT_TEXT_SELECTORS).substring(0, 70);
-                console.log(`%cOriginal Thoughts Filter: Hiding COMMENT. Reason: Found slop indicator. Text starts with: "${text}..."`, "color: #ffb800;", node);
+                console.log(`%cAI Slop Filter: Hiding COMMENT. Reason: Found slop indicator. Text starts with: "${text}..."`, "color: #ffb800;", node);
                 hideElement(node);
             }
         }
     } catch (e) {
-        console.error("Original Thoughts Filter: Error processing node:", e, node);
+        console.error("AI Slop Filter: Error processing node:", e, node);
     }
 }
 
@@ -130,14 +130,14 @@ function processNode(node) {
 function initialScan() {
     if (!isEnabled) return;
 
-    console.log("Original Thoughts Filter: Running initial page scan...");
+    console.log("AI Slop Filter: Running initial page scan...");
     try {
         document.querySelectorAll(POST_SELECTORS.join(', ')).forEach(node => processNode(node));
         document.querySelectorAll(COMMENT_SELECTORS.join(', ')).forEach(node => processNode(node));
     } catch (e) {
-        console.error("Original Thoughts Filter: Error during initialScan:", e);
+        console.error("AI Slop Filter: Error during initialScan:", e);
     }
-    console.log("Original Thoughts Filter: Initial page scan complete.");
+    console.log("AI Slop Filter: Initial page scan complete.");
 }
 
 // --- Main Execution ---
@@ -164,7 +164,7 @@ const observer = new MutationObserver((mutationsList) => {
             }
         }
     } catch (e) {
-        console.error("Original Thoughts Filter: Error inside MutationObserver:", e);
+        console.error("AI Slop Filter: Error inside MutationObserver:", e);
     }
 });
 
@@ -173,13 +173,13 @@ chrome.storage.sync.get(['isEnabled', 'totalHiddenCount'], (data) => {
     isEnabled = data.isEnabled;
 
     if (isEnabled) {
-        console.log("Original Thoughts Filter: Filter is ON. Starting scan.");
+        console.log("AI Slop Filter: Filter is ON. Starting scan.");
         // Wait for the page to be a bit more settled before the initial scan
         setTimeout(initialScan, 1000);
 
         observer.observe(document.body, { childList: true, subtree: true });
     } else {
-        console.log("Original Thoughts Filter: Filter is OFF.");
+        console.log("AI Slop Filter: Filter is OFF.");
     }
 });
 
@@ -187,20 +187,20 @@ chrome.storage.sync.get(['isEnabled', 'totalHiddenCount'], (data) => {
 chrome.storage.onChanged.addListener((changes, area) => {
     try {
         if (area === 'sync' && changes.isEnabled) {
-            console.log("Original Thoughts Filter: State changed.");
+            console.log("AI Slop Filter: State changed.");
             isEnabled = changes.isEnabled.newValue;
 
             if (isEnabled) {
-                console.log("Original Thoughts Filter: Turning ON. Starting observer.");
+                console.log("AI Slop Filter: Turning ON. Starting observer.");
                 setTimeout(initialScan, 5); // Re-scan the page
                 observer.observe(document.body, { childList: true, subtree: true });
             } else {
-                console.log("Original Thoughts Filter: Turning OFF. Disconnecting observer.");
+                console.log("AI Slop Filter: Turning OFF. Disconnecting observer.");
                 observer.disconnect();
             }
         }
     } catch (e) {
-        console.error("Original Thoughts Filter: Error in storage.onChanged listener:", e);
+        console.error("AI Slop Filter: Error in storage.onChanged listener:", e);
     }
 });
 

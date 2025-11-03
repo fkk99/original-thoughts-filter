@@ -6,7 +6,7 @@ chrome.runtime.onInstalled.addListener(() => {
         isEnabled: true,
         totalHiddenCount: 0
     }, () => {
-        console.log('Original Thoughts Filter: Default state set to ON.');
+        console.log('AI Slop Filter: Default state set to ON.');
     });
 });
 
