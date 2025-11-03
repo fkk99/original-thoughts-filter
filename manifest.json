@@ -1,7 +1,7 @@
 {
-    "manifest_version": 3,
+    "manifest_version": 4,
     "name": "AI Slop Filter",
-    "version": "0.2.0",
+    "version": "0.4.0",
     "description": "Hides LinkedIn AI slop to promote original content. Click the icon to toggle.",
     "permissions": [
         "storage"
